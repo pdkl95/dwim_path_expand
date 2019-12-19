@@ -12,7 +12,7 @@ arg_enum! {
     }
 }
 
-fn find_output_order(matches: ArgMatches) -> OutputOrder {
+fn find_output_order(matches: &ArgMatches) -> OutputOrder {
     if matches.is_present("sort_order") {
         return OutputOrder::SORT;
     } else if matches.is_present("rand_order") {
@@ -74,9 +74,20 @@ fn main() {
              .long("random")
              .help("Shortcut for --order=RANDOM")
         )
+        .arg(Arg::with_name("input_paths")
+             .help("Partial paths to expand")
+             .takes_value(true)
+             .multiple(true)
+        )
         .get_matches();
 
-    let output_order = find_output_order(matches);
+    let output_order = find_output_order(&matches);
 
     println!("Output Order: {}", output_order);
+
+    if let Some(in_v) = matches.values_of("input_paths") {
+        for input_path in in_v {
+            println!("An input path: \"{}\"", input_path);
+        }
+    }
 }
