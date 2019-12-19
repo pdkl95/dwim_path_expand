@@ -15,3 +15,8 @@ version = "~2.33.0"
 default-features = false
 features = [ "color", "wrap_help" ]
 
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = 'abort'
