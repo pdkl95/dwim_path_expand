@@ -3,6 +3,10 @@ extern crate clap;
 
 use clap::{App, Arg, ArgMatches};
 
+extern crate rand;
+use rand::thread_rng;
+use rand::seq::SliceRandom;
+
 arg_enum! {
     #[derive(Debug)]
     enum OutputOrder {
@@ -82,15 +86,36 @@ fn find_arg_matches() -> ArgMatches<'static> {
         .get_matches();
 }
 
+fn expand_input_path(paths: &mut Vec<String>, input_path: &str) {
+    println!("An input path: \"{}\"", input_path);
+
+    let file = input_path.to_string();
+    paths.push(file.clone());
+}
+
 fn main() {
     let matches = find_arg_matches();
     let output_order = find_output_order(&matches);
+    let mut paths: Vec<String> = Vec::new();
 
-    println!("Output Order: {}", output_order);
+    let input_paths: Vec<&str> = if matches.is_present("input_paths") {
+        matches.values_of("input_paths").unwrap().collect()
+    } else {
+        vec![]
+    };
 
-    if let Some(in_v) = matches.values_of("input_paths") {
-        for input_path in in_v {
-            println!("An input path: \"{}\"", input_path);
-        }
+    for input_path in input_paths {
+        expand_input_path(&mut paths, input_path);
+    }
+
+    println!("OutputOrder: {}", output_order);
+    match output_order {
+        OutputOrder::PRESERVE => {},
+        OutputOrder::SORT     => paths.sort(),
+        OutputOrder::RANDOM   => paths.shuffle(&mut thread_rng()),
+    };
+
+    for path in paths {
+        println!("Sorted Output: {}", path);
     }
 }
