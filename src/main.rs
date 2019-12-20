@@ -7,6 +7,9 @@ extern crate rand;
 use rand::thread_rng;
 use rand::seq::SliceRandom;
 
+mod expander;
+use expander::PathExpander;
+
 arg_enum! {
     #[derive(Debug)]
     enum OutputOrder {
@@ -86,16 +89,24 @@ fn find_arg_matches() -> ArgMatches<'static> {
         .get_matches();
 }
 
-fn expand_input_path(paths: &mut Vec<String>, input_path: &str) {
-    println!("An input path: \"{}\"", input_path);
-
-    let file = input_path.to_string();
-    paths.push(file.clone());
-}
-
 fn main() {
     let matches = find_arg_matches();
     let output_order = find_output_order(&matches);
+    let mut expander = PathExpander::new();
+
+    if matches.is_present("hidden") {
+        expander.hidden = true;
+    }
+
+    if matches.is_present("maxdepth") {
+        let md_str = matches.value_of("maxdepth").unwrap();
+        match md_str.parse::<u32>() {
+            Ok(n) => expander.maxdepth = n,
+            Err(e) => panic!("--maxdepth \"{}\" is not an integer: {}",
+                             md_str, e)
+        }
+    }
+
     let mut paths: Vec<String> = Vec::new();
 
     let input_paths: Vec<&str> = if matches.is_present("input_paths") {
@@ -105,7 +116,8 @@ fn main() {
     };
 
     for input_path in input_paths {
-        expand_input_path(&mut paths, input_path);
+        let mut expanded_paths = expander.expand_input_path(input_path);
+        paths.append(&mut expanded_paths);
     }
 
     println!("OutputOrder: {}", output_order);
