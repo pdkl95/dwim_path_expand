@@ -22,8 +22,8 @@ fn find_output_order(matches: &ArgMatches) -> OutputOrder {
     }
 }
 
-fn main() {
-    let matches = App::new("dwim_path_expand") 
+fn find_arg_matches() -> ArgMatches<'static> {
+    return App::new("dwim_path_expand")
         .version(crate_version!()) 
         .author(crate_authors!())
         .about(crate_description!()) 
@@ -80,7 +80,10 @@ fn main() {
              .multiple(true)
         )
         .get_matches();
+}
 
+fn main() {
+    let matches = find_arg_matches();
     let output_order = find_output_order(&matches);
 
     println!("Output Order: {}", output_order);
