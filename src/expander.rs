@@ -3,16 +3,27 @@ use std::path::Path;
 
 pub struct PathExpander {
     filter_ext: bool,
+    pub extra_suffix: HashSet<String>,
     pub included_ext: HashSet<String>,
     pub excluded_ext: HashSet<String>,
     pub hidden: bool,
     pub maxdepth: u32,
 }
 
+macro_rules! add_ext_method {
+    ($var:ident, $method:ident) => {
+        pub fn $method(&mut self, ext: &str) {
+            self.filter_ext = true;
+            self.$var.insert(ext.to_string());
+        }
+    };
+}
+
 impl PathExpander {
     pub fn new() -> PathExpander {
         PathExpander {
             filter_ext: false,
+            extra_suffix: HashSet::new(),
             included_ext: HashSet::new(),
             excluded_ext: HashSet::new(),
             hidden: false,
@@ -20,15 +31,9 @@ impl PathExpander {
         }
     }
 
-    pub fn include_ext(&mut self, ext: &str) {
-        self.filter_ext = true;
-        self.included_ext.insert(ext.to_string());
-    }
-
-    pub fn exclude_ext(&mut self, ext: &str) {
-        self.filter_ext = true;
-        self.excluded_ext.insert(ext.to_string());
-    }
+    add_ext_method!(extra_suffix, add_extra_suffix);
+    add_ext_method!(included_ext, add_included_ext);
+    add_ext_method!(excluded_ext, add_excluded_ext);
 
     fn is_matching_ext(&self, ext: &str) -> bool {
         if !self.filter_ext {
@@ -61,7 +66,25 @@ impl PathExpander {
         match path.extension() {
             Some(ext_osstr) => {
                 let ext = ext_osstr.to_str().expect("OsStr.to_str call failed");
-                return self.is_matching_ext(ext);
+
+                if self.is_matching_ext(ext) {
+                    return true;
+                }
+
+                if self.extra_suffix.contains(ext) {
+                    let mut noext = path.to_path_buf();
+                    noext.set_extension("");
+                    let noext_str = noext.to_str().expect("PathBuf.to_str call failed");
+                    let path_noext = Path::new(noext_str);
+                    match path_noext.extension() {
+                        Some(_) => {
+                            return self.is_matching_file(path_noext);
+                        },
+                        _ => {},
+                    }
+                }
+
+                return false;
             },
             None => {
                 return false;
@@ -109,13 +132,13 @@ impl PathExpander {
         let mut expanded_paths: Vec<String> = Vec::new();
 
         let path = Path::new(input_path);
-        println!("*** EXPANDING: {}", path.display());
+        // println!("*** EXPANDING: {}", path.display());
 
         self.expand(&mut expanded_paths, &path, 0);
 
-        for expath in &expanded_paths {
-            println!("  - {}", expath);
-        }
+        // for expath in &expanded_paths {
+        //     println!("  - {}", expath);
+        // }
 
         return expanded_paths;
     }

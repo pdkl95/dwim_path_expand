@@ -50,14 +50,18 @@ fn find_arg_matches() -> ArgMatches<'static> {
              .long("include")
              .help("Only match files with these extensions")
              .takes_value(true)
-             //.multiple(true)
         )
         .arg(Arg::with_name("excluded_ext")
              .short("e")
              .long("exclude")
              .help("Never match files with these extensions")
              .takes_value(true)
-             //.multiple(true)
+        )
+        .arg(Arg::with_name("extra_suffix")
+             .short("x")
+             .long("extra-suffix")
+             .help("Also include files with these extensions appended to the --ibcyde extensions")
+             .takes_value(true)
         )
         .arg(Arg::with_name("zero")
              .short("0")
@@ -107,22 +111,28 @@ fn main() {
         }
     }
 
+    if matches.is_present("extra_suffix") {
+        let extstr = matches.value_of("extra_suffix").unwrap();
+        let extlist: Vec<&str> = extstr.split(',').collect();
+        for ext in extlist {
+            expander.add_extra_suffix(ext);
+        }
+    }
+
     if matches.is_present("included_ext") {
         let extstr = matches.value_of("included_ext").unwrap();
         let extlist: Vec<&str> = extstr.split(',').collect();
         for ext in extlist {
-            expander.include_ext(ext);
+            expander.add_included_ext(ext);
         }
-        println!("INcluding EXT: {:?}", expander.included_ext);
     }
 
     if matches.is_present("excluded_ext") {
         let extstr = matches.value_of("excluded_ext").unwrap();
         let extlist: Vec<&str> = extstr.split(',').collect();
         for ext in extlist {
-            expander.exclude_ext(ext);
+            expander.add_excluded_ext(ext);
         }
-        println!("EXcluding EXT: {:?}", expander.included_ext);
     }
 
     let mut paths: Vec<String> = Vec::new();
@@ -133,14 +143,11 @@ fn main() {
         vec![]
     };
 
-    println!("input_paths = {:?}", input_paths);
     for input_path in input_paths {
         let mut expanded_paths = expander.expand_input_path(input_path);
         paths.append(&mut expanded_paths);
     }
 
-    println!("\n--");
-    println!("OutputOrder: {}", output_order);
     match output_order {
         OutputOrder::PRESERVE => {},
         OutputOrder::SORT     => paths.sort(),
@@ -148,6 +155,6 @@ fn main() {
     };
 
     for path in paths {
-        println!("Sorted Output: {}", path);
+        println!("{}", path);
     }
 }
