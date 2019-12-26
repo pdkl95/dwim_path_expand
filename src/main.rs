@@ -3,12 +3,11 @@ extern crate clap;
 
 use clap::{App, Arg, ArgMatches};
 
-extern crate rand;
-use rand::thread_rng;
-use rand::seq::SliceRandom;
-
 mod expander;
 use expander::PathExpander;
+
+mod rng;
+use rng::RNG;
 
 arg_enum! {
     #[derive(Debug)]
@@ -151,7 +150,11 @@ fn main() {
     match output_order {
         OutputOrder::PRESERVE => {},
         OutputOrder::SORT     => paths.sort(),
-        OutputOrder::RANDOM   => paths.shuffle(&mut thread_rng()),
+        OutputOrder::RANDOM   => {
+            let mut rand = RNG::new();
+            rand.seed_from_current_time();
+            rand.shuffle(&mut paths);
+        },
     };
 
     for path in paths {
