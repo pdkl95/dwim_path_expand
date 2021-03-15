@@ -7,6 +7,7 @@ pub struct PathExpander {
     pub included_ext: HashSet<String>,
     pub excluded_ext: HashSet<String>,
     pub show_hidden: bool,
+    pub match_prefix: bool,
     pub maxdepth: u32,
 }
 
@@ -27,6 +28,7 @@ impl PathExpander {
             included_ext: HashSet::new(),
             excluded_ext: HashSet::new(),
             show_hidden: false,
+            match_prefix: false,
             maxdepth: 1
         }
     }
@@ -127,6 +129,35 @@ impl PathExpander {
             }
         } else {
             // not in filesystem
+            if depth == 0 && self.match_prefix {
+                self.expand_matching_prefix(expanded_paths, &path, 0);
+            }
+        }
+    }
+
+    fn expand_matching_prefix(&self, expanded_paths: &mut Vec<String>, path: &Path, depth: u32) {
+        let parent_opt = path.parent();
+        match parent_opt {
+            Some(_) => { },
+            None => { return; }
+        }
+        let parent = parent_opt.unwrap();
+        if !parent.is_dir() {
+            return;
+        }
+
+        let name = path.file_name().unwrap().to_str().unwrap();
+        // println!("*** PREFIX MATCHING: \"{}\" in {}", name, parent.display());
+
+        for entry in parent.read_dir().unwrap() {
+            if let Ok(entry) = entry {
+                let entpath = entry.path();
+                let entname = entpath.file_name().unwrap().to_str().unwrap();
+                // println!("  - name: \"{}\"\tpath: \"{}\"", entname, entpath.display());
+                if entname.starts_with(name) {
+                    self.expand(expanded_paths, &entpath, depth);
+                }
+            }
         }
     }
 

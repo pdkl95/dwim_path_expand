@@ -38,6 +38,11 @@ fn find_arg_matches() -> ArgMatches<'static> {
              .long("all")
              .help("Output includes hidden files (\"hidden\" filenames start with \".\")")
         )
+        .arg(Arg::with_name("match_prefix")
+             .short("p")
+             .long("match-prefix")
+             .help("Match all files with an <input_path> prefix.")
+        )
         .arg(Arg::with_name("maxdepth")
              .short("d")
              .long("maxdepth")
@@ -99,6 +104,10 @@ fn main() {
 
     if matches.is_present("show_hidden") {
         expander.show_hidden = true;
+    }
+
+    if matches.is_present("match_prefix") {
+        expander.match_prefix = true;
     }
 
     if matches.is_present("maxdepth") {
