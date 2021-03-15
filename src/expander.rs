@@ -6,7 +6,7 @@ pub struct PathExpander {
     pub extra_suffix: HashSet<String>,
     pub included_ext: HashSet<String>,
     pub excluded_ext: HashSet<String>,
-    pub hidden: bool,
+    pub show_hidden: bool,
     pub maxdepth: u32,
 }
 
@@ -26,7 +26,7 @@ impl PathExpander {
             extra_suffix: HashSet::new(),
             included_ext: HashSet::new(),
             excluded_ext: HashSet::new(),
-            hidden: false,
+            show_hidden: false,
             maxdepth: 1
         }
     }
@@ -59,8 +59,10 @@ impl PathExpander {
             return false;
         }
 
-        if self.hidden && stem.starts_with(".") {
-            return false;
+        if !self.show_hidden {
+            if stem.starts_with(".") {
+                return false;
+            }
         }
 
         match path.extension() {

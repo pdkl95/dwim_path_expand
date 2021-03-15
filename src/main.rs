@@ -33,10 +33,10 @@ fn find_arg_matches() -> ArgMatches<'static> {
         .version(crate_version!()) 
         .author(crate_authors!())
         .about(crate_description!()) 
-        .arg(Arg::with_name("hidden")
+        .arg(Arg::with_name("show_hidden")
              .short("a")
              .long("all")
-             .help("Output includes hidden files (\"hidden\" filenames start with \".\"")
+             .help("Output includes hidden files (\"hidden\" filenames start with \".\")")
         )
         .arg(Arg::with_name("maxdepth")
              .short("d")
@@ -59,7 +59,7 @@ fn find_arg_matches() -> ArgMatches<'static> {
         .arg(Arg::with_name("extra_suffix")
              .short("x")
              .long("extra-suffix")
-             .help("Also include files with these extensions appended to the --ibcyde extensions")
+             .help("Also include files with these extensions appended to the --include extensions")
              .takes_value(true)
         )
         .arg(Arg::with_name("zero")
@@ -97,8 +97,8 @@ fn main() {
     let output_order = find_output_order(&matches);
     let mut expander = PathExpander::new();
 
-    if matches.is_present("hidden") {
-        expander.hidden = true;
+    if matches.is_present("show_hidden") {
+        expander.show_hidden = true;
     }
 
     if matches.is_present("maxdepth") {
