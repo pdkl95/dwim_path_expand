@@ -1,3 +1,7 @@
+extern crate glob;
+
+use glob::glob;
+
 use std::collections::HashSet;
 use std::path::Path;
 
@@ -147,15 +151,18 @@ impl PathExpander {
         }
 
         let name = path.file_name().unwrap().to_str().unwrap();
-        // println!("*** PREFIX MATCHING: \"{}\" in {}", name, parent.display());
+        let name_wildcard = format!("{}*", name);
+        let pattern_path = parent.join(name_wildcard);
+        let pattern_str = pattern_path.to_str().unwrap();
+        // println!("*** PATTERN: \"{}\"", pattern_str);
 
-        for entry in parent.read_dir().unwrap() {
-            if let Ok(entry) = entry {
-                let entpath = entry.path();
-                let entname = entpath.file_name().unwrap().to_str().unwrap();
-                // println!("  - name: \"{}\"\tpath: \"{}\"", entname, entpath.display());
-                if entname.starts_with(name) {
+        for entry in glob(pattern_str).unwrap() {
+            match entry {
+                Ok(entpath) => {
                     self.expand(expanded_paths, &entpath, depth);
+                },
+                Err(e) => {
+                    println!("glob error: {:?}", e);
                 }
             }
         }
