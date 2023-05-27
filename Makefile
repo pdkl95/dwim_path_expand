@@ -6,7 +6,10 @@ INSTALL = install -c
 INSTALL_STRIP = $(INSTALL) -s
 RM_F = rm -f
 
-RUSTFLAGS="-Cembed-bitcode=yes"
+BUILD_TARGET = x86_64-unknown-linux-gnu
+BUILD_OPTS = -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort
+
+export RUSTFLAGS = -C strip=debuginfo -C lto -C link-arg=-s
 
 TARGET_BUILD_DIR = target/x86_64-unknown-linux-gnu/release
 DWIM_PATH_EXPAND_BIN = $(TARGET_BUILD_DIR)/dwim_path_expand
@@ -22,7 +25,7 @@ all: build
 build: $(TARGETS)
 
 $(DWIM_PATH_EXPAND_BIN): $(DWIM_PATH_EXPAND_SRC)
-	echo $$RUSTFLAGS xargo build --target x86_64-unknown-linux-gnu --release
+	cargo build $(BUILD_OPTS) --target $(BUILD_TARGET) --release
 
 install: build
 	$(INSTALL_STRIP) $(TARGETS) $(BINDIR)
@@ -31,7 +34,7 @@ uninstall:
 	$(RM_F) $(INSTALLED_TARGETS)
 
 clean:
-	xargo clean
+	cargo clean
 
 
 .PHONY: all build install clean
