@@ -70,7 +70,7 @@ fn find_arg_matches() -> ArgMatches<'static> {
         .arg(Arg::with_name("zero")
              .short("0")
              .long("zero-terminated")
-             .help("Separate output paths with \0, similar to \"find ... -print0\"")
+             .help("Separate output paths with \\0, similar to \"find ... -print0\"")
         )
         .arg(Arg::with_name("order")
              .short("o")
