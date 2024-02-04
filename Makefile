@@ -25,7 +25,7 @@ all: build
 build: $(TARGETS)
 
 $(DWIM_PATH_EXPAND_BIN): $(DWIM_PATH_EXPAND_SRC)
-	cargo build $(BUILD_OPTS) --target $(BUILD_TARGET) --release
+	cargo $(BUILD_OPTS) build --target $(BUILD_TARGET) --release
 
 install: build
 	$(INSTALL_STRIP) $(TARGETS) $(BINDIR)
