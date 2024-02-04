@@ -4,6 +4,8 @@ use glob::glob;
 
 use std::collections::HashSet;
 use std::path::Path;
+use std::path::PathBuf;
+use std::env::current_dir;
 
 pub struct PathExpander {
     filter_ext: bool,
@@ -100,7 +102,7 @@ impl PathExpander {
         }
     }
 
-    fn expand(&self, expanded_paths: &mut Vec<String>, path: &Path, depth: u32) {
+    fn expand(&self, expanded_paths: &mut Vec<String>, path: &Path, depth: u32, strip_prefix: Option<&PathBuf>) {
         //println!("expand(_, {:?}, {})", path, depth);
 
         if depth > self.maxdepth {
@@ -113,7 +115,11 @@ impl PathExpander {
 
             if md.is_file() {
                 if self.is_matching_file(path) {
-                    let file_path = path.to_str().expect("to_str call failed");
+                    let striped_path = match strip_prefix {
+                        Some(p) => path.strip_prefix(p).unwrap(),
+                        None    => path
+                    };
+                    let file_path = striped_path.to_str().expect("to_str call failed");
                     expanded_paths.push(file_path.to_string());
                 }
             } else if md.is_dir() {
@@ -123,7 +129,7 @@ impl PathExpander {
                         Ok(e) => {
                             let entpath = e.path();
                             //println!("dirent: {:?}", entpath);
-                            self.expand(expanded_paths, &entpath, newdepth);
+                            self.expand(expanded_paths, &entpath, newdepth, strip_prefix);
                         },
                         _ => { }
                     }
@@ -139,27 +145,32 @@ impl PathExpander {
         }
     }
 
-    fn expand_matching_prefix(&self, expanded_paths: &mut Vec<String>, path: &Path, depth: u32) {
-        let parent_opt = path.parent();
-        match parent_opt {
-            Some(_) => { },
-            None => { return; }
+    fn get_parent_dir<P>(&self, path: P) -> Option<PathBuf> where P: AsRef<Path> {
+        let path_val = path.as_ref();
+        let parent = path_val.parent()?;
+        if parent.components().next().is_none() {
+            return current_dir().ok();
         }
-        let parent = parent_opt.unwrap();
-        if !parent.is_dir() {
-            return;
-        }
+        Some(parent.to_owned())
+    }
 
+    fn expand_matching_prefix(&self, expanded_paths: &mut Vec<String>, path: &Path, depth: u32) {
+        let is_rel = path.is_relative();
+        let parent = self.get_parent_dir(path).unwrap();
         let name = path.file_name().unwrap().to_str().unwrap();
         let name_wildcard = format!("{}*", name);
         let pattern_path = parent.join(name_wildcard);
         let pattern_str = pattern_path.to_str().unwrap();
-        // println!("*** PATTERN: \"{}\"", pattern_str);
+        //println!("*** PATTERN: \"{}\"", pattern_str);
 
         for entry in glob(pattern_str).unwrap() {
             match entry {
                 Ok(entpath) => {
-                    self.expand(expanded_paths, &entpath, depth);
+                    if is_rel {
+                        self.expand(expanded_paths, &entpath, depth, current_dir().ok().as_ref());
+                    } else {
+                        self.expand(expanded_paths, &entpath, depth, None);
+                    }
                 },
                 Err(e) => {
                     println!("glob error: {:?}", e);
@@ -174,7 +185,7 @@ impl PathExpander {
         let path = Path::new(input_path);
         // println!("*** EXPANDING: {}", path.display());
 
-        self.expand(&mut expanded_paths, &path, 0);
+        self.expand(&mut expanded_paths, &path, 0, None);
 
         // for expath in &expanded_paths {
         //     println!("  - {}", expath);
