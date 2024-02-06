@@ -7,6 +7,8 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::env::current_dir;
 
+use walkdir::WalkDir;
+
 pub struct PathExpander {
     filter_ext: bool,
     pub extra_suffix: HashSet<String>,
@@ -124,7 +126,7 @@ impl PathExpander {
                 }
             } else if md.is_dir() {
                 let newdepth = depth + 1;
-                for entry in path.read_dir().expect("read_dir call failed") {
+                for entry in WalkDir::new(path).min_depth(1).max_depth(1).follow_links(true).sort_by_file_name() {
                     match entry {
                         Ok(e) => {
                             let entpath = e.path();

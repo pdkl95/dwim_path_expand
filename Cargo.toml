@@ -10,6 +10,7 @@ description = "Automagically (DWIM) expands incomplete file paths to the \"obvio
 
 [dependencies]
 glob = "~0.3.0"
+walkdir = "2"
 
 [dependencies.clap]
 version = "~2.33.0"
