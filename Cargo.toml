@@ -9,7 +9,7 @@ description = "Automagically (DWIM) expands incomplete file paths to the \"obvio
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glob = "~0.3.0"
+glob-match = "0.2.1"
 walkdir = "2"
 
 [dependencies.clap]

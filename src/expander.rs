@@ -1,6 +1,4 @@
-extern crate glob;
-
-use glob::glob;
+use glob_match::glob_match;
 
 use std::collections::HashSet;
 use std::path::Path;
@@ -92,7 +90,7 @@ impl PathExpander {
                         Some(_) => {
                             return self.is_matching_file(path_noext);
                         },
-                        _ => {},
+                        _ => {}
                     }
                 }
 
@@ -102,6 +100,10 @@ impl PathExpander {
                 return false;
             },
         }
+    }
+
+    fn dir_iter<P>(&self, path: P) -> WalkDir where P: AsRef<Path> {
+        return WalkDir::new(path).min_depth(1).max_depth(1).follow_links(true).sort_by_file_name();
     }
 
     fn expand(&self, expanded_paths: &mut Vec<String>, path: &Path, depth: u32, strip_prefix: Option<&PathBuf>) {
@@ -126,7 +128,7 @@ impl PathExpander {
                 }
             } else if md.is_dir() {
                 let newdepth = depth + 1;
-                for entry in WalkDir::new(path).min_depth(1).max_depth(1).follow_links(true).sort_by_file_name() {
+                for entry in self.dir_iter(path) {
                     match entry {
                         Ok(e) => {
                             let entpath = e.path();
@@ -165,18 +167,19 @@ impl PathExpander {
         let pattern_str = pattern_path.to_str().unwrap();
         //println!("*** PATTERN: \"{}\"", pattern_str);
 
-        for entry in glob(pattern_str).unwrap() {
+        for entry in self.dir_iter(parent) {
             match entry {
-                Ok(entpath) => {
-                    if is_rel {
-                        self.expand(expanded_paths, &entpath, depth, current_dir().ok().as_ref());
-                    } else {
-                        self.expand(expanded_paths, &entpath, depth, None);
+                Ok(e) => {
+                    let entpath = e.path();
+                    if glob_match(pattern_str, entpath.to_str().unwrap()) {
+                        if is_rel {
+                            self.expand(expanded_paths, &entpath, depth, current_dir().ok().as_ref());
+                        } else {
+                            self.expand(expanded_paths, &entpath, depth, None);
+                        }
                     }
                 },
-                Err(e) => {
-                    println!("glob error: {:?}", e);
-                }
+                _ => { }
             }
         }
     }
