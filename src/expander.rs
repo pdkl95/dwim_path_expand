@@ -120,7 +120,7 @@ impl PathExpander {
             if md.is_file() {
                 if self.is_matching_file(path) {
                     let striped_path = match strip_prefix {
-                        Some(p) => path.strip_prefix(p).unwrap(),
+                        Some(p) => path.strip_prefix(p).unwrap_or(path),
                         None    => path
                     };
                     let file_path = striped_path.to_str().expect("to_str call failed");
