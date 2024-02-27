@@ -106,6 +106,35 @@ impl PathExpander {
         return WalkDir::new(path).min_depth(1).max_depth(1).follow_links(true).sort_by_file_name();
     }
 
+    fn expand_existing_path(&self, expanded_paths: &mut Vec<String>, path: &Path, depth: u32, strip_prefix: Option<&PathBuf>) {
+        let md = path.metadata().expect("metadata call failed");
+
+        if md.is_file() {
+            if self.is_matching_file(path) {
+                let striped_path = match strip_prefix {
+                    Some(p) => path.strip_prefix(p).unwrap_or(path),
+                    None    => path
+                };
+                let file_path = striped_path.to_str().expect("to_str call failed");
+                expanded_paths.push(file_path.to_string());
+            }
+        } else if md.is_dir() {
+            let newdepth = depth + 1;
+            for entry in self.dir_iter(path) {
+                match entry {
+                    Ok(e) => {
+                        let entpath = e.path();
+                        //println!("dirent: {:?}", entpath);
+                        self.expand(expanded_paths, &entpath, newdepth, strip_prefix);
+                    },
+                    _ => { }
+                }
+            }
+        } else {
+            // not a file or dir - ignore
+        }
+    }
+
     fn expand(&self, expanded_paths: &mut Vec<String>, path: &Path, depth: u32, strip_prefix: Option<&PathBuf>) {
         //println!("expand(_, {:?}, {})", path, depth);
 
@@ -115,34 +144,21 @@ impl PathExpander {
         }
 
         if path.exists() {
-            let md = path.metadata().expect("metadata call failed");
-
-            if md.is_file() {
-                if self.is_matching_file(path) {
-                    let striped_path = match strip_prefix {
-                        Some(p) => path.strip_prefix(p).unwrap_or(path),
-                        None    => path
-                    };
-                    let file_path = striped_path.to_str().expect("to_str call failed");
-                    expanded_paths.push(file_path.to_string());
-                }
-            } else if md.is_dir() {
-                let newdepth = depth + 1;
-                for entry in self.dir_iter(path) {
-                    match entry {
-                        Ok(e) => {
-                            let entpath = e.path();
-                            //println!("dirent: {:?}", entpath);
-                            self.expand(expanded_paths, &entpath, newdepth, strip_prefix);
-                        },
-                        _ => { }
-                    }
-                }
-            } else {
-                // not a file or dir - ignore
-            }
+            self.expand_existing_path(expanded_paths, &path, depth, strip_prefix);
         } else {
-            // not in filesystem
+            // --- not in filesystem ---
+            // first try adding the extra_suffix
+            let path_str = path.to_str().unwrap();
+            for extra in &self.extra_suffix {
+                let path_suffix_str = format!("{}.{}", path_str, extra);
+                let path_suffix = Path::new(&path_suffix_str);
+                if path_suffix.exists() {
+                    self.expand_existing_path(expanded_paths, &path_suffix, depth, strip_prefix);
+                    return;
+                }
+            }
+
+            // otherwise, try prefix matching
             if depth == 0 && self.match_prefix {
                 self.expand_matching_prefix(expanded_paths, &path, 0);
             }
