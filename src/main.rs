@@ -43,6 +43,11 @@ fn find_arg_matches() -> ArgMatches<'static> {
              .long("match-prefix")
              .help("Match all files with an <input_path> prefix.")
         )
+        .arg(Arg::with_name("match_concat")
+             .short("c")
+             .long("match-concat")
+             .help("Match multiple filenamed concatenated into a single <input_path> string.")
+        )
         .arg(Arg::with_name("maxdepth")
              .short("d")
              .long("maxdepth")
@@ -108,6 +113,10 @@ fn main() {
 
     if matches.is_present("match_prefix") {
         expander.match_prefix = true;
+    }
+
+    if matches.is_present("match_concat") {
+        expander.match_concat = true;
     }
 
     if matches.is_present("maxdepth") {

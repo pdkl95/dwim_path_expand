@@ -14,6 +14,7 @@ pub struct PathExpander {
     pub excluded_ext: HashSet<String>,
     pub show_hidden: bool,
     pub match_prefix: bool,
+    pub match_concat: bool,
     pub maxdepth: u32,
 }
 
@@ -35,6 +36,7 @@ impl PathExpander {
             excluded_ext: HashSet::new(),
             show_hidden: false,
             match_prefix: false,
+            match_concat: false,
             maxdepth: 1
         }
     }
@@ -44,8 +46,14 @@ impl PathExpander {
     add_ext_method!(excluded_ext, add_excluded_ext);
 
     fn is_matching_ext(&self, ext: &str) -> bool {
-        if !self.filter_ext {
-            return true;
+        // println!("filter_ext = {:?}", self.filter_ext);
+        // println!("included_ext = {:?}", self.included_ext);
+        // println!("excluded_ext = {:?}", self.excluded_ext);
+
+        if self.filter_ext {
+            // fall through
+        } else {
+            return false;
         }
 
         if self.excluded_ext.contains(ext) {
@@ -158,6 +166,13 @@ impl PathExpander {
                 }
             }
 
+            // next try splitting into multiple existing filenames
+            if depth == 0 && self.match_prefix {
+                if self.expand_concatenated_filenames(expanded_paths, &path, 0) {
+                    return;
+                }
+            }
+
             // otherwise, try prefix matching
             if depth == 0 && self.match_prefix {
                 self.expand_matching_prefix(expanded_paths, &path, 0);
@@ -200,6 +215,55 @@ impl PathExpander {
         }
     }
 
+    fn expand_concatenated_filenames(&self, expanded_paths: &mut Vec<String>, path: &Path, _depth: u32) -> bool {
+        let concat_str = path.to_str().unwrap();
+
+        let mut idx = 0;
+
+        let charcount = concat_str.len();
+
+        let mut files: Vec<String> = Vec::new();
+
+        while idx < charcount {
+            let remaining = charcount - idx + 1;
+            let oldidx = idx;
+
+            for n in 1..remaining {
+                let substr = &concat_str[idx..(n+idx)];
+                let filepath = Path::new(substr);
+                // println!("charcount = {}, idx = {}, n = {}, substr: {:?}",
+                //          charcount, idx, n, filepath);
+
+                if filepath.is_file() {
+                    if self.is_matching_file(filepath) {
+                        //println!("Match! Addomg \"{:?}\"", filepath);
+                        files.push(String::from(substr));
+                        idx += n;
+                        break;
+                    } else {
+                        //println!("filename didn't match: \"{:?}\"", filepath);
+                    }
+
+                }
+            }
+
+            if oldidx == idx {
+                break;
+            }
+        }
+
+        if idx == charcount {
+            for file in files {
+                expanded_paths.push(file.to_string());
+            }
+            //println!("concat match success");
+            return true;
+        } else {
+            //println!("concat match failed!");
+            return false;
+        }
+    }
+
     pub fn expand_input_path(&self, input_path: &str) -> Vec<String> {
         let mut expanded_paths: Vec<String> = Vec::new();
 
@@ -215,4 +279,3 @@ impl PathExpander {
         return expanded_paths;
     }
 }
-
