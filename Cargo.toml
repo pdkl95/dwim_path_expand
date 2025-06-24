@@ -13,9 +13,9 @@ glob-match = "0.2.1"
 walkdir = "2"
 
 [dependencies.clap]
-version = "~2.33.0"
+version = "3.0.14"
 default-features = false
-features = []
+features = ['cargo', 'std']
 
 [profile.release]
 #strip = true
