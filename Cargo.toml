@@ -1,6 +1,6 @@
 [package]
 name = "dwim_path_expand"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Brent Sanders <git@thoughtnoise.net>"]
 edition = "2018"
 license = "GPL-3.0-or-later"
