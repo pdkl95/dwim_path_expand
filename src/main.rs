@@ -14,6 +14,7 @@ arg_enum! {
     enum OutputOrder {
         PRESERVE,
         SORT,
+        REVERSE,
         RANDOM
     }
 }
@@ -21,6 +22,8 @@ arg_enum! {
 fn find_output_order(matches: &ArgMatches) -> OutputOrder {
     if matches.is_present("sort_order") {
         return OutputOrder::SORT;
+    } else if matches.is_present("reverse_order") {
+        return OutputOrder::REVERSE;
     } else if matches.is_present("rand_order") {
         return OutputOrder::RANDOM;
     } else {
@@ -88,6 +91,11 @@ fn find_arg_matches() -> ArgMatches<'static> {
              .short("s")
              .long("sort")
              .help("Shortcut for --order=SORT")
+        )
+        .arg(Arg::with_name("reverse_order")
+             .short("R")
+             .long("reverse")
+             .help("Shortcut for --order=REVERSE")
         )
         .arg(Arg::with_name("rand_order")
              .short("r")
@@ -167,8 +175,14 @@ fn main() {
 
     match output_order {
         OutputOrder::PRESERVE => {},
-        OutputOrder::SORT     => paths.sort(),
-        OutputOrder::RANDOM   => {
+        OutputOrder::SORT => {
+            paths.sort();
+        },
+        OutputOrder::REVERSE => {
+            paths.sort();
+            paths.reverse();
+        },
+        OutputOrder::RANDOM => {
             let mut rand = RNG::new();
             rand.seed_from_current_time();
             rand.shuffle(&mut paths);
